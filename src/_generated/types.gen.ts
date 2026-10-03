@@ -972,6 +972,10 @@ export type GetCalculateSpectralAdvancedResponses = {
          */
         LTAS_TILT?: number;
         /**
+         * Full Long-Term Average Spectrum as freq/dB pairs, 80-4000 Hz in 100 Hz steps. Example: [{"freq":80,"db":-25.3}, ...]
+         */
+        LTAS_CURVE?: number;
+        /**
          * Mean fundamental frequency in Hz. Example: 195.8
          */
         MEAN_F0?: number;
@@ -1276,6 +1280,119 @@ export type GetCalculateFormantStatisticsResponses = {
 };
 
 export type GetCalculateFormantStatisticsResponse = GetCalculateFormantStatisticsResponses[keyof GetCalculateFormantStatisticsResponses];
+
+export type PostEstimateFormantsData = {
+    body: {
+        /**
+         * ID returned by /api/assignFileId - REQUIRED
+         */
+        fileId: string;
+        /**
+         * Start of the segment in seconds; 0 with stop_sec 0 analyses the whole file - REQUIRED
+         */
+        start_sec: number;
+        /**
+         * End of the segment in seconds; 0 with start_sec 0 analyses the whole file - REQUIRED
+         */
+        stop_sec: number;
+        /**
+         * Language code, e.g. "fr-FR". Optional, default "en-US"
+         */
+        language?: string;
+        /**
+         * "male" or "female". Optional, default "female"
+         */
+        gender?: string;
+        /**
+         * "adult" or "child". Optional, default "adult"
+         */
+        ageGroup?: string;
+        /**
+         * true for a sustained vowel: the most stable window is analysed. Optional, default false
+         */
+        sustained_vowel?: boolean;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/estimate_formants';
+};
+
+export type PostEstimateFormantsErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type PostEstimateFormantsResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * boolean - true when formants were measured
+         */
+        success?: boolean;
+        /**
+         * object - {f1_mean, f2_mean, f3_mean (Hz, f3 may be null), f1_std, f2_std, f3_std, num_measurements, f1_cv, f2_cv, estimated_f0}
+         */
+        formants?: {
+            [key: string]: unknown;
+        };
+        /**
+         * object - {x, y} between 0 and 1: x front to back, y close to open
+         */
+        ipa_coordinates?: {
+            [key: string]: unknown;
+        };
+        /**
+         * number - Stability of the formant track
+         */
+        stability_score?: number;
+        /**
+         * Echo of the language parameter
+         */
+        language?: string;
+        /**
+         * number - Analysed duration in seconds
+         */
+        analysis_duration?: number;
+        /**
+         * object - {gender, age_group} used for the analysis
+         */
+        speaker_info?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Parameter set used: "adult_female_default", "adult_male", "adult_female" or "child"
+         */
+        analysis_parameters?: string;
+        /**
+         * When success is false: "insufficient_data", "analysis_failure", "f0_failure" or "unknown"
+         */
+        error_type?: string;
+        /**
+         * array - When success is false: tips to get a usable recording
+         */
+        suggestions?: Array<{
+            [key: string]: unknown;
+        }>;
+    };
+};
+
+export type PostEstimateFormantsResponse = PostEstimateFormantsResponses[keyof PostEstimateFormantsResponses];
 
 export type GetCalculateSzRatioData = {
     body?: never;
@@ -2445,6 +2562,226 @@ export type GetCalculateProsodySimilarityResponses = {
 
 export type GetCalculateProsodySimilarityResponse = GetCalculateProsodySimilarityResponses[keyof GetCalculateProsodySimilarityResponses];
 
+export type GetCalculateCsidData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * REQUIRED. fileId of the CONNECTED SPEECH recording.
+         */
+        csFileId: string;
+    };
+    url: '/api/calculate-csid';
+};
+
+export type GetCalculateCsidErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type GetCalculateCsidResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * number - CSID score (154.59 − 10.393·CPP − 1.083·SR − 3.713·SR_SD).
+         */
+        CSID_SCORE?: number;
+        /**
+         * number - Smoothed cepstral peak prominence over the whole signal, in dB.
+         */
+        CPP?: number;
+        /**
+         * number - Low/high spectral ratio (energy below 4 kHz vs 4–8 kHz), in dB, averaged over voiced frames.
+         */
+        SR?: number;
+        /**
+         * number - Standard deviation of the spectral ratio across voiced frames, in dB.
+         */
+        SR_SD?: number;
+        /**
+         * integer - Number of voiced frames used.
+         */
+        N_VOICED_FRAMES?: number;
+        /**
+         * number - Screening cut-off (19.09).
+         */
+        CUTOFF_SCREENING?: number;
+        /**
+         * number - Balanced cut-off (24.27).
+         */
+        CUTOFF_BALANCED?: number;
+        /**
+         * number - Conservative cut-off (30.85).
+         */
+        CUTOFF_CONSERVATIVE?: number;
+        /**
+         * Bibliographic reference of the formula (Awan et al.).
+         */
+        CSID_REFERENCE?: string;
+        /**
+         * Note on the per-frame approximation used by this implementation.
+         */
+        CSID_CAVEAT?: string;
+    };
+};
+
+export type GetCalculateCsidResponse = GetCalculateCsidResponses[keyof GetCalculateCsidResponses];
+
+export type PostVoiceAssessmentData = {
+    body: {
+        /**
+         * Sustained vowel recording (e.g. /a/ for at least 3 seconds). Optional, but at least one of vowel or speech is required.
+         */
+        vowel?: Blob | File;
+        /**
+         * Connected speech recording (e.g. a reading passage). Optional, but at least one of vowel or speech is required.
+         */
+        speech?: Blob | File;
+        /**
+         * REQUIRED. Language of the recordings: "fr" or "en" (selects the AVQI version and the pronunciation locale).
+         */
+        language: string;
+        /**
+         * Patient age in years. Optional, but required when 'vowel' is sent.
+         */
+        age?: number;
+        /**
+         * Patient gender: "male", "female" or "other". Optional, but required when 'vowel' is sent.
+         */
+        gender?: string;
+        /**
+         * Text read in the speech recording. Optional; when given, a pronunciation assessment is added.
+         */
+        reference_text?: string;
+        /**
+         * Free label returned as is. Optional.
+         */
+        label?: string;
+        /**
+         * Free file name returned as is. Optional.
+         */
+        filename?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/voice-assessment';
+};
+
+export type PostVoiceAssessmentErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type PostVoiceAssessmentResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * "ok" when every measure succeeded, "partial" otherwise.
+         */
+        status?: string;
+        /**
+         * Echo of the filename parameter.
+         */
+        filename?: string;
+        /**
+         * Echo of the label parameter.
+         */
+        label?: string;
+        /**
+         * Echo of the language parameter.
+         */
+        language?: string;
+        /**
+         * Echo of the age parameter, or null.
+         */
+        age?: number;
+        /**
+         * Echo of the gender parameter, or null.
+         */
+        gender?: string;
+        /**
+         * Echo of the reference_text parameter, or null.
+         */
+        reference_text?: string;
+        /**
+         * object - {vowel, speech}, each {duration_seconds, sample_rate: 16000, channels: 1} or null.
+         */
+        audio?: {
+            [key: string]: unknown;
+        };
+        /**
+         * object - Key results: avqi, avqi_cpps, jitter_local_percent, shimmer_local_percent, mean_f0_hz, hnr_db, cpp_db, gne, h1_h2_db, abi, the severities (jitter, shimmer, hnr, cpp, breathiness) and abnormal_flags [{measure, severity}]. A key is absent when its measure failed.
+         */
+        summary?: {
+            [key: string]: unknown;
+        };
+        /**
+         * object - Raw result of every underlying measure, keyed by measure (jitter_shimmer, cpp, gne, hnr, h1_h2, formants, spectral, voice_dynamics, gemaps, pitch, intensity, speech_percentage, speech_segments, avqi, abi, pronunciation).
+         */
+        details?: {
+            [key: string]: unknown;
+        };
+        /**
+         * object - Failed measures: {measure: {message, status}}.
+         */
+        errors?: {
+            [key: string]: unknown;
+        };
+        /**
+         * array - Warnings (strings).
+         */
+        warnings?: Array<{
+            [key: string]: unknown;
+        }>;
+        /**
+         * Pipeline version, e.g. "voice-assessment@1.0.0".
+         */
+        pipeline_version?: string;
+        /**
+         * ISO 8601 timestamp of the analysis.
+         */
+        processed_at?: string;
+        /**
+         * number - Processing time in milliseconds.
+         */
+        processing_time_ms?: number;
+    };
+};
+
+export type PostVoiceAssessmentResponse = PostVoiceAssessmentResponses[keyof PostVoiceAssessmentResponses];
+
 export type PostSoundLevelData = {
     body: {
         /**
@@ -2584,7 +2921,7 @@ export type PostAnalyzePhonemesLiveData = {
          */
         language?: string;
         /**
-         * Optional. Alias for an alternative ASR model (must pass server-side `isKnownAlias`). Resolved to a model URL internally.
+         * Optional, French only. `short-words-champion` (isolated short words, recommended), `logatome-champion` (logatomes / nonsense syllables), or omit for the CNAM wav2vec2-french-phonemizer-v2 baseline (continuous speech). Must be a known alias (server-side `isKnownAlias`) — an unknown alias returns 400. Resolved to a model blob URL internally, never exposed to the client.
          */
         model?: string;
         /**
@@ -2622,9 +2959,45 @@ export type PostAnalyzePhonemesLiveResponses = {
      */
     200: {
         /**
-         * JSON shape produced by the underlying phoneme client. Typical fields: `phonemes: [{ label, start_ms, end_ms, confidence }, ...]`, `language`, `model_used`. Exact shape is not enumerated by the JS layer and is determined by the per-language Python client (see python/phonemes/french/phoneme_client.py and python/phonemes/estonian/phoneme_client.py).
+         * Boolean — true when analysis completed (including the empty-result "Silence detected" case).
          */
-        '<python output>'?: string;
+        success?: boolean;
+        /**
+         * "completed" on success.
+         */
+        status?: string;
+        /**
+         * Descriptive message, e.g. "Analysis completed successfully" or "Silence detected".
+         */
+        message?: string;
+        /**
+         * Echoed language code processed.
+         */
+        language?: string;
+        /**
+         * Space-separated sequence of detected phonemes (empty string if silence).
+         */
+        transcription?: string;
+        /**
+         * Total number of phonemes detected.
+         */
+        phoneme_count?: number;
+        /**
+         * Array of the phoneme labels detected, in order.
+         */
+        phonemes?: Array<{
+            [key: string]: unknown;
+        }>;
+        /**
+         * Array of `{ phoneme, start, end, duration, confidence, second_phoneme, second_confidence }` — one entry per phoneme. `second_phoneme`/`second_confidence` (French champion models only) is the runner-up at that phoneme's most confident frame, or null if unavailable.
+         */
+        phoneme_timings?: Array<{
+            [key: string]: unknown;
+        }>;
+        /**
+         * `{ duration_seconds, sample_rate }` — sample_rate is always 16000.
+         */
+        audio_info?: string;
     };
 };
 
@@ -2706,6 +3079,402 @@ export type PostClassifyStutteringResponses = {
 };
 
 export type PostClassifyStutteringResponse = PostClassifyStutteringResponses[keyof PostClassifyStutteringResponses];
+
+export type PostClassifyFrenchVowelData = {
+    body: {
+        /**
+         * Mode 1 (use ONE of audio/blobUrl/fileId). Direct audio file upload, multipart/form-data — the field name MUST be exactly `audio`. Accepts wav, webm, ogg, mp3 (converted server-side to WAV 16kHz mono).
+         */
+        audio: string;
+        /**
+         * Mode 2 (use ONE of audio/blobUrl/fileId), JSON body. HTTPS URL of the audio file, downloaded server-side.
+         */
+        blobUrl: string;
+        /**
+         * Mode 3 (use ONE of audio/blobUrl/fileId), JSON body. fileId from a prior /api/assignFileId upload.
+         */
+        fileId: string;
+        /**
+         * Optional (also accepted as expectedVowel, any input mode). When provided, the response is scored against this vowel.
+         */
+        expected_vowel?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/classify-french-vowel';
+};
+
+export type PostClassifyFrenchVowelErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type PostClassifyFrenchVowelResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * Boolean — true if the classification succeeded.
+         */
+        success?: boolean;
+        /**
+         * Predicted vowel (IPA).
+         */
+        predicted_vowel?: string;
+        /**
+         * Confidence for the predicted vowel (0.0 - 1.0).
+         */
+        confidence?: string;
+        /**
+         * Object of probabilities for all 11 vowels, e.g. `{ "a": 0.009, "e": 0.91, ... }`.
+         */
+        all_probabilities?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Audio duration in seconds.
+         */
+        audio_duration?: number;
+        /**
+         * Server-side processing time in seconds.
+         */
+        processing_time_seconds?: number;
+        /**
+         * Model used, e.g. "vowel-aphasix-champion".
+         */
+        model_name?: string;
+        /**
+         * Echoed back only when expected_vowel/expectedVowel was provided in the request.
+         */
+        'expected_vowel (conditional)'?: string;
+        /**
+         * Boolean — true when predicted_vowel matches expected_vowel.
+         */
+        'is_correct (conditional)'?: boolean;
+        /**
+         * The model's probability for expected_vowel, from all_probabilities.
+         */
+        'expected_vowel_probability (conditional)'?: string;
+        /**
+         * expected_vowel_probability rounded to a 0-100 integer. 90-100 excellent, 50-89 acceptable, 10-49 hard to recognize, 0-9 not recognized at all.
+         */
+        'score (conditional)'?: number;
+    };
+};
+
+export type PostClassifyFrenchVowelResponse = PostClassifyFrenchVowelResponses[keyof PostClassifyFrenchVowelResponses];
+
+export type PostClassifyFrenchPlosiveData = {
+    body: {
+        /**
+         * Mode 1 (use ONE of audio/blobUrl/fileId). Direct audio file upload, multipart/form-data — the field name MUST be exactly `audio`.
+         */
+        audio: string;
+        /**
+         * Mode 2 (use ONE of audio/blobUrl/fileId), JSON body. HTTPS URL of the audio file, downloaded server-side.
+         */
+        blobUrl: string;
+        /**
+         * Mode 3 (use ONE of audio/blobUrl/fileId), JSON body. fileId from a prior /api/assignFileId upload.
+         */
+        fileId: string;
+        /**
+         * Optional (also accepted as expectedPlosive, any input mode). When provided, the response is scored against this plosive.
+         */
+        expected_plosive?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/classify-french-plosive';
+};
+
+export type PostClassifyFrenchPlosiveErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type PostClassifyFrenchPlosiveResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * Boolean — true if the classification succeeded.
+         */
+        success?: boolean;
+        /**
+         * Predicted plosive (IPA).
+         */
+        predicted_plosive?: string;
+        /**
+         * Confidence for the predicted plosive (0.0 - 1.0).
+         */
+        confidence?: string;
+        /**
+         * Object of probabilities for all 6 plosives.
+         */
+        all_probabilities?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Audio duration in seconds.
+         */
+        audio_duration?: number;
+        /**
+         * Server-side processing time in seconds.
+         */
+        processing_time_seconds?: number;
+        /**
+         * Model used, e.g. "plosive-aphasix-champion".
+         */
+        model_name?: string;
+        /**
+         * Echoed back only when expected_plosive/expectedPlosive was provided in the request.
+         */
+        'expected_plosive (conditional)'?: string;
+        /**
+         * Boolean — true when predicted_plosive matches expected_plosive.
+         */
+        'is_correct (conditional)'?: boolean;
+        /**
+         * The model's probability for expected_plosive, from all_probabilities.
+         */
+        'expected_plosive_probability (conditional)'?: string;
+        /**
+         * expected_plosive_probability rounded to a 0-100 integer.
+         */
+        'score (conditional)'?: number;
+    };
+};
+
+export type PostClassifyFrenchPlosiveResponse = PostClassifyFrenchPlosiveResponses[keyof PostClassifyFrenchPlosiveResponses];
+
+export type PostClassifyFrenchFricativeData = {
+    body: {
+        /**
+         * Mode 1 (use ONE of audio/blobUrl/fileId). Direct audio file upload, multipart/form-data — the field name MUST be exactly `audio`.
+         */
+        audio: string;
+        /**
+         * Mode 2 (use ONE of audio/blobUrl/fileId), JSON body. HTTPS URL of the audio file, downloaded server-side.
+         */
+        blobUrl: string;
+        /**
+         * Mode 3 (use ONE of audio/blobUrl/fileId), JSON body. fileId from a prior /api/assignFileId upload.
+         */
+        fileId: string;
+        /**
+         * Optional (also accepted as expectedFricative, any input mode). When provided, the response is scored against this fricative.
+         */
+        expected_fricative?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/classify-french-fricative';
+};
+
+export type PostClassifyFrenchFricativeErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type PostClassifyFrenchFricativeResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * Boolean — true if the classification succeeded.
+         */
+        success?: boolean;
+        /**
+         * Predicted fricative (IPA).
+         */
+        predicted_fricative?: string;
+        /**
+         * Confidence for the predicted fricative (0.0 - 1.0).
+         */
+        confidence?: string;
+        /**
+         * Object of probabilities for all 6 fricatives.
+         */
+        all_probabilities?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Audio duration in seconds.
+         */
+        audio_duration?: number;
+        /**
+         * Server-side processing time in seconds.
+         */
+        processing_time_seconds?: number;
+        /**
+         * Model used, e.g. "fricative-aphasix-champion".
+         */
+        model_name?: string;
+        /**
+         * Echoed back only when expected_fricative/expectedFricative was provided in the request.
+         */
+        'expected_fricative (conditional)'?: string;
+        /**
+         * Boolean — true when predicted_fricative matches expected_fricative.
+         */
+        'is_correct (conditional)'?: boolean;
+        /**
+         * The model's probability for expected_fricative, from all_probabilities.
+         */
+        'expected_fricative_probability (conditional)'?: string;
+        /**
+         * expected_fricative_probability rounded to a 0-100 integer.
+         */
+        'score (conditional)'?: number;
+    };
+};
+
+export type PostClassifyFrenchFricativeResponse = PostClassifyFrenchFricativeResponses[keyof PostClassifyFrenchFricativeResponses];
+
+export type PostClassifyFrenchLiquidNasalData = {
+    body: {
+        /**
+         * Mode 1 (use ONE of audio/blobUrl/fileId). Direct audio file upload, multipart/form-data — the field name MUST be exactly `audio`.
+         */
+        audio: string;
+        /**
+         * Mode 2 (use ONE of audio/blobUrl/fileId), JSON body. HTTPS URL of the audio file, downloaded server-side.
+         */
+        blobUrl: string;
+        /**
+         * Mode 3 (use ONE of audio/blobUrl/fileId), JSON body. fileId from a prior /api/assignFileId upload.
+         */
+        fileId: string;
+        /**
+         * Optional (also accepted as expectedLiquidNasal, any input mode). When provided, the response is scored against this class.
+         */
+        expected_liquid_nasal?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/classify-french-liquid-nasal';
+};
+
+export type PostClassifyFrenchLiquidNasalErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type PostClassifyFrenchLiquidNasalResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * Boolean — true if the classification succeeded.
+         */
+        success?: boolean;
+        /**
+         * Predicted liquid/nasal (IPA).
+         */
+        predicted_liquid_nasal?: string;
+        /**
+         * Confidence for the predicted class (0.0 - 1.0).
+         */
+        confidence?: string;
+        /**
+         * Object of probabilities for all 5 classes.
+         */
+        all_probabilities?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Audio duration in seconds.
+         */
+        audio_duration?: number;
+        /**
+         * Server-side processing time in seconds.
+         */
+        processing_time_seconds?: number;
+        /**
+         * Model used, e.g. "liquid-nasal-aphasix-champion".
+         */
+        model_name?: string;
+        /**
+         * Echoed back only when expected_liquid_nasal/expectedLiquidNasal was provided in the request.
+         */
+        'expected_liquid_nasal (conditional)'?: string;
+        /**
+         * Boolean — true when predicted_liquid_nasal matches expected_liquid_nasal.
+         */
+        'is_correct (conditional)'?: boolean;
+        /**
+         * The model's probability for expected_liquid_nasal, from all_probabilities.
+         */
+        'expected_liquid_nasal_probability (conditional)'?: string;
+        /**
+         * expected_liquid_nasal_probability rounded to a 0-100 integer.
+         */
+        'score (conditional)'?: number;
+    };
+};
+
+export type PostClassifyFrenchLiquidNasalResponse = PostClassifyFrenchLiquidNasalResponses[keyof PostClassifyFrenchLiquidNasalResponses];
 
 export type PostClassifyEstonianVowelData = {
     body: {
@@ -3272,10 +4041,6 @@ export type PostSpeechExerciseGeneratorResponses = {
          */
         remaining_credits?: number;
         /**
-         * Boolean — true if the call used an anonymous_<sessionId> key
-         */
-        isAnonymousSession?: boolean;
-        /**
          * Echo of the parameters used to produce the reply (ageLevel, speechChallenge, language)
          */
         parameters?: string;
@@ -3589,7 +4354,7 @@ export type PostVoiceMetricsInterpreterData = {
             [key: string]: unknown;
         };
         /**
-         * Optional. Used by anonymous-key validation flow.
+         * Optional. Used by the credit-validation flow.
          */
         email?: string;
     };
@@ -3656,10 +4421,6 @@ export type PostVoiceMetricsInterpreterResponses = {
          * Number.
          */
         remaining_credits?: number;
-        /**
-         * Boolean — true if the call used an anonymous_<sessionId> key.
-         */
-        isAnonymousSession?: boolean;
     };
 };
 
@@ -3680,7 +4441,7 @@ export type PostSyntaxCheckerAgentData = {
          */
         threadId?: string;
         /**
-         * Optional. Used by anonymous-key validation flow.
+         * Optional. Used by the credit-validation flow.
          */
         email?: string;
     };
@@ -3733,10 +4494,6 @@ export type PostSyntaxCheckerAgentResponses = {
          * Number.
          */
         remaining_credits?: number;
-        /**
-         * Boolean.
-         */
-        isAnonymousSession?: boolean;
     };
 };
 
@@ -3836,7 +4593,7 @@ export type PostAdaptiveExerciseAgentData = {
          */
         includeTips?: string;
         /**
-         * Optional. Used by anonymous-key validation flow.
+         * Optional. Used by the credit-validation flow.
          */
         email?: string;
     };
@@ -3887,10 +4644,6 @@ export type PostAdaptiveExerciseAgentResponses = {
          * Number.
          */
         remaining_credits?: number;
-        /**
-         * Boolean.
-         */
-        isAnonymousSession?: boolean;
     };
 };
 
@@ -3909,7 +4662,7 @@ export type PostFrenchToIpaAgentData = {
          */
         threadId?: string;
         /**
-         * Optional. Used by anonymous-key validation flow.
+         * Optional. Used by the credit-validation flow.
          */
         email?: string;
     };
@@ -3964,10 +4717,6 @@ export type PostFrenchToIpaAgentResponses = {
          * Number.
          */
         remaining_credits?: number;
-        /**
-         * Boolean.
-         */
-        isAnonymousSession?: boolean;
     };
 };
 
@@ -3992,7 +4741,7 @@ export type PostTherapyPlanningAgentData = {
          */
         patient_anamnesis?: string;
         /**
-         * Optional. Used by anonymous-key validation flow.
+         * Optional. Used by the credit-validation flow.
          */
         email?: string;
     };
@@ -4066,10 +4815,6 @@ export type PostTherapyPlanningAgentResponses = {
          */
         remaining_credits?: number;
         /**
-         * Boolean.
-         */
-        isAnonymousSession?: boolean;
-        /**
          * Object: { patient_id, session_id, processing_time_seconds, disfluency_types, fluency_rate, total_segments_analyzed, response_metadata: {responseLength, containsStructuredData, parseSuccess} }.
          */
         metadata?: {
@@ -4107,7 +4852,7 @@ export type PostLanguageChatPronunciationData = {
          */
         threadId?: string;
         /**
-         * Optional. Used by anonymous-key validation flow.
+         * Optional. Used by the credit-validation flow.
          */
         email?: string;
         /**
@@ -4162,10 +4907,6 @@ export type PostLanguageChatPronunciationResponses = {
          * Number.
          */
         remaining_credits?: number;
-        /**
-         * Boolean.
-         */
-        isAnonymousSession?: boolean;
         /**
          * Object — passthrough of resolved language, nativeLanguage, ageLevel, topic.
          */
