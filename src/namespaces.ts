@@ -51,6 +51,7 @@ function asJson<T>(resp: { json(): Promise<unknown> }): Promise<T> {
 }
 
 function makeTranscriptionEvent(payload: SseEvent): TranscriptionEvent {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- payload is unvalidated server JSON; status may be missing
   const normalised = (payload.status ?? "").toLowerCase();
   return {
     status: payload.status,
@@ -342,7 +343,7 @@ export class StutteringNamespace {
 
     if (!completed) {
       throw new VocametrixServerError(
-        `Stuttering classification timed out after ${timeoutMs}ms (session=${sessionId})`,
+        `Stuttering classification timed out after ${String(timeoutMs)}ms (session=${sessionId})`,
       );
     }
 

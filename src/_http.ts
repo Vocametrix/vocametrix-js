@@ -17,6 +17,7 @@ export type AudioInput = string | Buffer | Uint8Array | AudioPayload;
 function isAudioPayload(audio: AudioInput): audio is AudioPayload {
   return (
     typeof audio === "object" &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- JS callers may pass null; `"data" in null` would throw
     audio !== null &&
     !(audio instanceof Uint8Array) &&
     "data" in audio
