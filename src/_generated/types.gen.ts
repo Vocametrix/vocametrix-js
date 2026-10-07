@@ -2983,7 +2983,7 @@ export type PostAnalyzePhonemesLiveResponses = {
          */
         phoneme_count?: number;
         /**
-         * Array of the phoneme labels detected, in order.
+         * Array of unique phoneme labels, in order of first appearance (duplicates removed). Use `transcription` or `phoneme_timings` for the full sequence.
          */
         phonemes?: Array<{
             [key: string]: unknown;
@@ -4255,7 +4255,7 @@ export type PostLanguageChatVocabularyData = {
          */
         nativeLanguage: string;
         /**
-         * Age/level (child-beginner, teen-intermediate, adult-advanced, etc.)
+         * CEFR level of the learner (A1, A2, B1, B2, C1, C2)
          */
         ageLevel: string;
         /**
@@ -4836,7 +4836,7 @@ export type PostLanguageChatPronunciationData = {
          */
         language: string;
         /**
-         * REQUIRED. Categorical age/level label.
+         * REQUIRED. CEFR level of the learner (A1, A2, B1, B2, C1, C2).
          */
         ageLevel: string;
         /**
