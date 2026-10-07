@@ -314,7 +314,7 @@ describe("audio content-type", () => {
     expect(audioContentType("audio.wav")).toBe("audio/wav");
   });
 
-  test("uploadBlobUrl falls back to audio/wav for unknown extension", async () => {
+  test("uploadBlobUrl sniffs the content-type from the buffer bytes", async () => {
     const capturedPutHeaders: Record<string, string>[] = [];
     (global as Record<string, unknown>)["fetch"] = jest.fn().mockImplementation(
       (...args: unknown[]) => {
@@ -332,9 +332,11 @@ describe("audio content-type", () => {
     );
 
     const { uploadBlobUrl } = await import("../src/_http.js");
-    // Buffer input: content-type falls back to audio/wav, no file I/O needed
-    await uploadBlobUrl("https://api.example.com", { "X-API-Key": "k" }, Buffer.from("data"));
+    // Buffer input: content-type comes from the magic bytes; unknown bytes are octet-stream
+    await uploadBlobUrl("https://api.example.com", { "X-API-Key": "k" }, Buffer.from("RIFF0000WAVE"));
     expect(capturedPutHeaders[0]?.["Content-Type"]).toBe("audio/wav");
+    await uploadBlobUrl("https://api.example.com", { "X-API-Key": "k" }, Buffer.from("data"));
+    expect(capturedPutHeaders[1]?.["Content-Type"]).toBe("application/octet-stream");
   });
 });
 
@@ -373,8 +375,8 @@ describe("stuttering.classify", () => {
 
 // ── Per-call email override ───────────────────────────────────────────────
 
-describe("per-call email override", () => {
-  test("avqi.calculate uses per-call email instead of client default", async () => {
+describe("deprecated email field", () => {
+  test("avqi.calculate no longer sends an email form field, even when one is passed", async () => {
     const capturedForms: FormData[] = [];
     (global as Record<string, unknown>)["fetch"] = jest.fn().mockImplementation(
       (...args: unknown[]) => {
@@ -393,6 +395,6 @@ describe("per-call email override", () => {
     const client = new VocametrixClient({ apiKey: "k", email: "default@test.com" });
     await client.avqi.calculate(Buffer.from("sv"), undefined, "override@test.com");
 
-    expect(capturedForms[0]?.get("email")).toBe("override@test.com");
+    expect(capturedForms[0]?.get("email")).toBeNull();
   });
 });
