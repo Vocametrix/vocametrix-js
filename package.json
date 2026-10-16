@@ -1,6 +1,6 @@
 {
   "name": "vocametrix",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Official JavaScript/TypeScript SDK for the Vocametrix voice analysis API",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -18,8 +18,14 @@
       }
     }
   },
-  "engines": { "node": ">=18" },
-  "files": ["dist", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -30,9 +36,21 @@
     "regenerate": "node scripts/regenerate.js"
   },
   "keywords": [
-    "voice-analysis", "speech-therapy", "avqi", "dsi", "jitter", "shimmer",
-    "pronunciation", "acoustic", "praat", "dysphonia", "vocametrix",
-    "speech-to-text", "text-to-speech", "phoneme", "stuttering"
+    "voice-analysis",
+    "speech-therapy",
+    "avqi",
+    "dsi",
+    "jitter",
+    "shimmer",
+    "pronunciation",
+    "acoustic",
+    "praat",
+    "dysphonia",
+    "vocametrix",
+    "speech-to-text",
+    "text-to-speech",
+    "phoneme",
+    "stuttering"
   ],
   "author": "Vocametrix",
   "license": "MIT",
@@ -41,7 +59,9 @@
     "url": "https://github.com/pmarmaroli/vocametrix-js.git"
   },
   "homepage": "https://www.vocametrix.com/api-docs",
-  "bugs": { "url": "https://github.com/pmarmaroli/vocametrix-js/issues" },
+  "bugs": {
+    "url": "https://github.com/pmarmaroli/vocametrix-js/issues"
+  },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.64.0",
     "@types/jest": "^29.5.0",
