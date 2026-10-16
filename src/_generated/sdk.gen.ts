@@ -221,7 +221,7 @@ export const getCalculateCpp = <ThrowOnError extends boolean = false>(options: O
 };
 
 /**
- * Calculate multi-band HNR with age and gender-specific clinical interpretation
+ * Calculate multi-band HNR with gender-specific F0 notes (no dysphonia verdict)
  */
 export const getCalculateHnrMultiband = <ThrowOnError extends boolean = false>(options: Options<GetCalculateHnrMultibandData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetCalculateHnrMultibandResponse, unknown, ThrowOnError>({

@@ -479,7 +479,7 @@ export type GetCalculateAvqiResponses = {
      */
     200: {
         /**
-         * Acoustic Voice Quality Index - final composite score (0-10 scale, dimensionless). Values above language-specific threshold indicate potential voice pathology
+         * Acoustic Voice Quality Index - final composite score (0-10 scale, dimensionless). Values above the language-specific cut-off indicate probable dysphonia; to our knowledge, no validated severity bands exist
          */
         AVQI?: number;
         /**
@@ -499,11 +499,11 @@ export type GetCalculateAvqiResponses = {
          */
         Shimmer_dB?: string;
         /**
-         * Spectral slope between 0-1kHz and 1-10kHz frequency ranges (dB/octave). More negative values indicate steeper spectral roll-off
+         * Spectral slope between 0-1kHz and 1-10kHz frequency ranges (dB). More negative values indicate steeper spectral roll-off
          */
         LTAS_slope?: number;
         /**
-         * Spectral tilt of trend line through long-term average spectrum 1-10kHz (dB/octave). Indicates overall spectral balance and voice quality
+         * Spectral tilt of trend line through long-term average spectrum 1-10kHz (dB). Indicates overall spectral balance and voice quality
          */
         LTAS_tilt?: string;
     };
@@ -625,7 +625,7 @@ export type GetCalculateDsiResponses = {
          */
         DSI?: number;
         /**
-         * number - Period Perturbation Quotient (PPQ5) as a percentage or fraction (parsed as number). Example: 0.45
+         * number - Jitter PPQ5 (Praat, %) entering the DSIbeta formula. Example: 0.45
          */
         JITTER?: number;
         /**
@@ -649,17 +649,17 @@ export type GetCalculateDsiResponses = {
          */
         PATIENT_GENDER?: string;
         /**
-         * string - Age group label used for interpretation (e.g. "Young adult / Middle-aged")
+         * string - Age group label, informational only (e.g. "Young adult / Middle-aged")
          */
         AGE_GROUP?: string;
         /**
-         * number - Age-related voice change risk flag (0 or 1). Example: 0
+         * number - Flag set to 1 when age ≥ 65, informational only: the DSI is not adjusted for age. Example: 0
          */
         PRESBYLARYNGIS_RISK?: number;
         /**
          * string - Gender-specific expected F0 range. Example: "150-350 Hz"
          */
-        EXPECTED_F0_RANGE?: number;
+        EXPECTED_F0_RANGE?: string;
     };
 };
 
@@ -710,11 +710,11 @@ export type GetCalculateCppResponses = {
          */
         CPP?: number;
         /**
-         * Clinical voice quality assessment. Example: "Good voice quality"
+         * Binary classification against the 14.45 dB cut-off (Murton et al. 2020). Example: "Normal"
          */
         VOICE_QUALITY?: string;
         /**
-         * Dysphonia severity classification. Example: "Normal"
+         * Text note on the classification. Example: "No dysphonia indicated"
          */
         SEVERITY?: string;
     };
@@ -731,7 +731,7 @@ export type GetCalculateHnrMultibandData = {
          */
         svFileId: string;
         /**
-         * Patient age in years (integer) - REQUIRED for age-specific analysis
+         * Patient age in years (integer) - REQUIRED (used for the age group note, no adjustment of HNR)
          */
         age: number;
         /**
@@ -787,13 +787,13 @@ export type GetCalculateHnrMultibandResponses = {
          */
         HNR_HIGH?: number;
         /**
-         * Mean fundamental frequency in Hz. Example: 195.4
+         * Mean fundamental frequency in Hz, null if pitch detection fails. Example: 195.4
          */
         MEAN_F0?: number;
         /**
          * Standard deviation of F0. Example: 8.5
          */
-        F0_STD?: string;
+        F0_STD?: number;
         /**
          * Gender classification result. Example: "Female"
          */
@@ -815,35 +815,35 @@ export type GetCalculateHnrMultibandResponses = {
          */
         HNR_SLOPE?: number;
         /**
-         * Clinical voice quality assessment. Example: "Good voice quality"
+         * Not classified, with reference norms. Example: "Not classified (no validated cutoff to our knowledge). Norms for sustained /a/ about 21-24.5 dB (Banh 2009)"
          */
         OVERALL_QUALITY?: string;
         /**
-         * Voice quality severity classification. Example: "Normal"
+         * No severity classification (no validated cutoff to our knowledge). Example: "Not classified (no validated cutoff to our knowledge)"
          */
         SEVERITY?: string;
         /**
-         * Dominant noise pattern classification. Example: "Low-frequency emphasis"
+         * Dominant noise pattern classification. Example: "Distributed noise pattern"
          */
-        NOISE_PATTERN?: number;
+        NOISE_PATTERN?: string;
         /**
-         * Breathiness assessment. Example: "Minimal breathiness"
+         * No breathiness classification (no validated cutoff for band HNR, to our knowledge). Example: "Not classified (no validated cutoff for band HNR, to our knowledge)"
          */
         BREATHINESS?: string;
         /**
          * Patient age used in analysis. Example: 35
          */
-        PATIENT_AGE?: string;
+        PATIENT_AGE?: number;
         /**
          * Patient gender classification. Example: "Female"
          */
         PATIENT_GENDER?: string;
         /**
-         * Age group classification. Example: "Young Adult"
+         * Age group classification. Example: "Young adult (18-44)"
          */
         AGE_GROUP?: string;
         /**
-         * Age-related clinical note. Example: "Age within normal vocal range"
+         * Age-related note (context only). Example: "Adult voice patterns expected"
          */
         AGE_NOTE?: string;
         /**
@@ -851,25 +851,25 @@ export type GetCalculateHnrMultibandResponses = {
          */
         F0_NOTE?: string;
         /**
-         * Gender-specific note. Example: "Female vocal characteristics confirmed"
+         * Gender-specific note. Example: "F0 consistent with reported gender"
          */
         GENDER_NOTE?: string;
         /**
          * Expected minimum F0 for age/gender. Example: 165.4
          */
-        EXPECTED_F0_MIN?: string;
+        EXPECTED_F0_MIN?: number;
         /**
          * Expected maximum F0 for age/gender. Example: 294.3
          */
-        EXPECTED_F0_MAX?: string;
+        EXPECTED_F0_MAX?: number;
         /**
-         * Age-based threshold adjustment applied. Example: 0.8
+         * Always 0 (no age adjustment), kept for API compatibility. Example: 0
          */
-        HNR_ADJUSTMENT?: string;
+        HNR_ADJUSTMENT?: number;
         /**
-         * Age-adjusted full-spectrum HNR. Example: 16.2
+         * Equal to HNR_FULL (no age adjustment), kept for API compatibility. Example: 15.4
          */
-        ADJUSTED_HNR_FULL?: string;
+        ADJUSTED_HNR_FULL?: number;
     };
 };
 
@@ -934,11 +934,11 @@ export type GetCalculateSpectralAdvancedResponses = {
         /**
          * Third moment indicating spectral asymmetry. Example: 0.85
          */
-        SPECTRAL_SKEWNESS?: string;
+        SPECTRAL_SKEWNESS?: number;
         /**
          * Fourth moment indicating spectral peakedness. Example: 2.34
          */
-        SPECTRAL_KURTOSIS?: string;
+        SPECTRAL_KURTOSIS?: number;
         /**
          * Energy ratio below/above 1 kHz in dB. Example: 4.2
          */
@@ -964,11 +964,11 @@ export type GetCalculateSpectralAdvancedResponses = {
          */
         SPECTRAL_FLUX?: number;
         /**
-         * Spectral slope 0-1 kHz vs 1-4 kHz in dB/octave. Example: -12.4
+         * Spectral slope 0-1 kHz vs 1-4 kHz in dB. Example: -12.4
          */
         LTAS_SLOPE?: number;
         /**
-         * Trend line slope across 1-4 kHz in dB/octave. Example: -8.9
+         * Trend line slope across 1-4 kHz in dB. Example: -8.9
          */
         LTAS_TILT?: number;
         /**
@@ -1014,7 +1014,7 @@ export type GetCalculateSpectralAdvancedResponses = {
         /**
          * Patient age used in analysis. Example: 35
          */
-        PATIENT_AGE?: string;
+        PATIENT_AGE?: number;
         /**
          * Patient gender classification. Example: "Female"
          */
@@ -1042,15 +1042,15 @@ export type GetCalculateSpectralAdvancedResponses = {
         /**
          * Expected minimum F0 for age/gender. Example: 165.4
          */
-        EXPECTED_F0_MIN?: string;
+        EXPECTED_F0_MIN?: number;
         /**
          * Expected maximum F0 for age/gender. Example: 294.3
          */
-        EXPECTED_F0_MAX?: string;
+        EXPECTED_F0_MAX?: number;
         /**
          * Expected spectral mean for demographics. Example: 1923.5
          */
-        SPECTRAL_MEAN_EXPECTED?: string;
+        SPECTRAL_MEAN_EXPECTED?: number;
     };
 };
 
@@ -1115,7 +1115,7 @@ export type GetCalculateFormantStatisticsResponses = {
         /**
          * F1 coefficient of variation in %. Example: 6.6
          */
-        F1_CV?: string;
+        F1_CV?: number;
         /**
          * F1 median frequency in Hz. Example: 682.1
          */
@@ -1139,7 +1139,7 @@ export type GetCalculateFormantStatisticsResponses = {
         /**
          * F2 coefficient of variation in %. Example: 6.3
          */
-        F2_CV?: string;
+        F2_CV?: number;
         /**
          * F2 median frequency in Hz. Example: 1245.6
          */
@@ -1163,7 +1163,7 @@ export type GetCalculateFormantStatisticsResponses = {
         /**
          * F3 coefficient of variation in %. Example: 3.9
          */
-        F3_CV?: string;
+        F3_CV?: number;
         /**
          * F3 median frequency in Hz. Example: 2851.7
          */
@@ -1187,7 +1187,7 @@ export type GetCalculateFormantStatisticsResponses = {
         /**
          * F4 coefficient of variation in %. Example: 3.8
          */
-        F4_CV?: string;
+        F4_CV?: number;
         /**
          * F4 median frequency in Hz. Example: 3842.9
          */
@@ -1217,7 +1217,7 @@ export type GetCalculateFormantStatisticsResponses = {
          */
         VOWEL_SPACE_DISTANCE?: number;
         /**
-         * Articulatory consistency (0-100). Example: 87.3
+         * Mean coefficient of variation of F1-F3, in %; lower means more stable. Example: 5.8
          */
         FORMANT_STABILITY_INDEX?: number;
         /**
@@ -1233,10 +1233,6 @@ export type GetCalculateFormantStatisticsResponses = {
          */
         VOWEL_QUALITY?: string;
         /**
-         * Hypernasality screening. Example: "Low risk"
-         */
-        HYPERNASALITY_RISK?: string;
-        /**
          * Gender classification. Example: "Female"
          */
         GENDER?: string;
@@ -1247,7 +1243,7 @@ export type GetCalculateFormantStatisticsResponses = {
         /**
          * Patient age in years. Example: 35
          */
-        PATIENT_AGE?: string;
+        PATIENT_AGE?: number;
         /**
          * Patient gender classification. Example: "Female"
          */
@@ -1267,15 +1263,15 @@ export type GetCalculateFormantStatisticsResponses = {
         /**
          * Expected F1 range for demographics. Example: "650-720 Hz"
          */
-        EXPECTED_F1_RANGE?: number;
+        EXPECTED_F1_RANGE?: string;
         /**
          * Expected F2 range for demographics. Example: "1200-1300 Hz"
          */
-        EXPECTED_F2_RANGE?: number;
+        EXPECTED_F2_RANGE?: string;
         /**
          * Expected F3 range for demographics. Example: "2800-2900 Hz"
          */
-        EXPECTED_F3_RANGE?: number;
+        EXPECTED_F3_RANGE?: string;
     };
 };
 
@@ -1407,7 +1403,7 @@ export type GetCalculateSzRatioData = {
          */
         zFileId: string;
         /**
-         * Patient age in years (for presbylaryngis assessment) - REQUIRED
+         * Patient age in years (for context) - REQUIRED
          */
         patientAge: number;
         /**
@@ -1485,7 +1481,7 @@ export type GetCalculateSzRatioResponses = {
         /**
          * S/Z phonation time ratio (primary clinical measure). Example: 0.97
          */
-        SZ_RATIO?: string;
+        SZ_RATIO?: number;
         /**
          * Percentage of /s/ recording with actual phonation. Example: 85.4
          */
@@ -1521,17 +1517,17 @@ export type GetCalculateSzRatioResponses = {
         /**
          * Coefficient of variation of F0 during /z/ in %. Example: 4.2
          */
-        F0_CV_Z?: string;
+        F0_CV_Z?: number;
         /**
          * Composite reliability score (0-4). Example: 3.8
          */
         RELIABILITY_SCORE?: number;
         /**
-         * Age-related voice changes risk (0/1). Example: 0
+         * Age flag (0/1), informational only: to our knowledge, no validated age-specific S/Z cut-off exists. Example: 0
          */
-        PRESBYLARYNGIS_RISK?: string;
+        PRESBYLARYNGIS_RISK?: number;
         /**
-         * Clinical classification with age adjustment. Example: "Normal S/Z ratio"
+         * Text label for the ratio; only the 1.4 cut-off has a published source (Eckel & Boone 1981). Example: "Normal S/Z ratio"
          */
         SZ_INTERPRETATION?: string;
         /**
@@ -1557,7 +1553,7 @@ export type GetCalculateSzRatioResponses = {
         /**
          * Patient age in years. Example: 35
          */
-        PATIENT_AGE?: string;
+        PATIENT_AGE?: number;
         /**
          * Patient gender classification. Example: "Female"
          */
@@ -1628,11 +1624,11 @@ export type GetCalculateGneResponses = {
          */
         GNE_VALUE?: number;
         /**
-         * GNE expressed in decibel scale for clinical interpretation. Example: -7.4
+         * 10*log10(GNE/(1-GNE)), a Vocametrix convenience transform, not a standard GNE measure (Michaelis 1997 reports GNE on its 0-1 scale). Example: -1.3
          */
-        GNE_DB?: string;
+        GNE_DB?: number;
         /**
-         * Average fundamental frequency in Hz. Example: 185.3
+         * Average fundamental frequency in Hz. Example: 205.3
          */
         MEAN_F0?: number;
         /**
@@ -1644,15 +1640,15 @@ export type GetCalculateGneResponses = {
          */
         HNR?: number;
         /**
-         * Gender classification based on F0 range. Example: "Female"
+         * Sex inferred from F0 against reference ranges (men about 88-172 Hz, women about 194-314 Hz, Banh 2009), otherwise "Undetermined (...)". Example: "Female"
          */
         GENDER?: string;
         /**
-         * Qualitative assessment of voice quality. Example: "Borderline normal"
+         * No verdict: to our knowledge, no validated cutoff exists for Praat GNE. Example: "Not classified (no validated cutoff to our knowledge)"
          */
         VOICE_QUALITY?: string;
         /**
-         * Contextual clinical guidance based on GNE value. Example: "Monitor voice quality. Consider vocal hygiene if symptoms persist."
+         * Fixed guidance text. Example: "To our knowledge, no validated diagnostic cutoff for GNE in Praat. Interpret with other measures and perceptual evaluation"
          */
         CLINICAL_RECOMMENDATION?: string;
         /**
@@ -1666,15 +1662,15 @@ export type GetCalculateGneResponses = {
         /**
          * Frequency range analyzed. Example: "500-4500 Hz"
          */
-        FREQUENCY_RANGE?: number;
+        FREQUENCY_RANGE?: string;
         /**
          * Bandwidth used in analysis. Example: "1000 Hz"
          */
-        BANDWIDTH?: number;
+        BANDWIDTH?: string;
         /**
          * Step size for frequency analysis. Example: "80 Hz"
          */
-        STEP_SIZE?: number;
+        STEP_SIZE?: string;
         /**
          * Algorithm reference. Example: "Michaelis_et_al_1997"
          */
@@ -1745,11 +1741,11 @@ export type GetCalculateH1H2Responses = {
          */
         F2_MEAN?: number;
         /**
-         * Estimated first formant bandwidth in Hz. Calculated using Hawk & Miller (1995) formula: B1 = 50 + (F1/10). Used for formant correction. Example: 97.30
+         * Estimated first formant bandwidth in Hz. Calculated with the Hawks & Miller (1995) bandwidth: 5th-order polynomial in the formant frequency (separate coefficients below and above 500 Hz), scaled by S = 1 + 0.25 × (F0 − 132) / 88; coefficients as in VoiceSauce. Used for formant correction. Example: 36.95
          */
         B1_MEAN?: number;
         /**
-         * Estimated second formant bandwidth in Hz. Calculated using Hawk & Miller (1995) formula: B2 = 70 + (F2/50). Used for formant correction. Example: 93.68
+         * Estimated second formant bandwidth in Hz. Calculated with the Hawks & Miller (1995) bandwidth: 5th-order polynomial in the formant frequency (separate coefficients below and above 500 Hz), scaled by S = 1 + 0.25 × (F0 − 132) / 88; coefficients as in VoiceSauce. Used for formant correction. Example: 43.28
          */
         B2_MEAN?: number;
         /**
@@ -1759,7 +1755,7 @@ export type GetCalculateH1H2Responses = {
         /**
          * Gender classification used for formant analysis. Determines formant ceiling frequency. Example: "Male" or "Female (F0-based)"
          */
-        GENDER?: number;
+        GENDER?: string;
     };
 };
 
@@ -1862,7 +1858,7 @@ export type GetCalculateAmbitusResponses = {
          */
         PITCH_CEILING?: number;
         /**
-         * Analysis technique used (Voice Range Profile)
+         * Analysis technique used (vocal range, F0 only)
          */
         ANALYSIS_METHOD?: string;
     };
@@ -1917,51 +1913,51 @@ export type GetJitterShimmerResponses = {
         /**
          * Mean recording intensity in dBFS (decibels relative to full scale). Target range: -25 to -10 dBFS. Example: -18.3
          */
-        MEAN_INTENSITY_DBFS?: string;
+        MEAN_INTENSITY_DBFS?: number;
         /**
          * Root-mean-square amplitude (0-1 scale). Used to calculate dBFS. Example: 0.122
          */
         RMS_AMPLITUDE?: number;
         /**
-         * Local jitter (period-to-period variation) in percent. Primary jitter measure. Normal: ≤1.04%. Example: 0.85
+         * Local jitter (period-to-period variation) in percent. Primary jitter measure. MDVP reference: 1.04% (not validated for Praat). Example: 0.85
          */
-        JITTER_LOCAL_PERCENT?: string;
+        JITTER_LOCAL_PERCENT?: number;
         /**
          * 5-period perturbation quotient in percent. Smoothed jitter over 5 periods. Example: 0.78
          */
-        JITTER_PPQ5_PERCENT?: string;
+        JITTER_PPQ5_PERCENT?: number;
         /**
          * Relative average perturbation in percent. Average over 3 consecutive periods. Example: 0.82
          */
-        JITTER_RAP_PERCENT?: string;
+        JITTER_RAP_PERCENT?: number;
         /**
          * Difference of differences of periods in percent. Sensitive to small perturbations. Example: 1.23
          */
-        JITTER_DDP_PERCENT?: string;
+        JITTER_DDP_PERCENT?: number;
         /**
-         * Local shimmer (peak-to-peak amplitude variation) in percent. Primary shimmer measure. Normal: ≤3.81%. Example: 2.45
+         * Local shimmer (peak-to-peak amplitude variation) in percent. Primary shimmer measure. MDVP reference: 3.81% (not validated for Praat). Example: 2.45
          */
-        SHIMMER_LOCAL_PERCENT?: string;
+        SHIMMER_LOCAL_PERCENT?: number;
         /**
          * Local shimmer in decibels. Logarithmic amplitude perturbation. Example: 0.215
          */
-        SHIMMER_LOCAL_DB?: string;
+        SHIMMER_LOCAL_DB?: number;
         /**
          * 3-period amplitude perturbation quotient in percent. Short-term shimmer. Example: 2.31
          */
-        SHIMMER_APQ3_PERCENT?: string;
+        SHIMMER_APQ3_PERCENT?: number;
         /**
          * 5-period amplitude perturbation quotient in percent. Medium-term shimmer. Example: 2.38
          */
-        SHIMMER_APQ5_PERCENT?: string;
+        SHIMMER_APQ5_PERCENT?: number;
         /**
          * 11-period amplitude perturbation quotient in percent. Long-term shimmer trends. Example: 2.52
          */
-        SHIMMER_APQ11_PERCENT?: string;
+        SHIMMER_APQ11_PERCENT?: number;
         /**
          * Difference of differences of amplitudes in percent. Sensitive to amplitude changes. Example: 3.47
          */
-        SHIMMER_DDA_PERCENT?: string;
+        SHIMMER_DDA_PERCENT?: number;
         /**
          * Mean fundamental frequency in Hz. Averaged across voiced segments. Example: 185.7
          */
@@ -1973,7 +1969,7 @@ export type GetJitterShimmerResponses = {
         /**
          * Coefficient of variation of F0 in percent. (F0_STD / MEAN_F0) × 100. Pitch stability metric. Example: 3.88
          */
-        F0_CV?: string;
+        F0_CV?: number;
         /**
          * Percentage of voiceless (unvoiced) frames. Indicates phonation breaks. Example: 5.2
          */
@@ -1985,21 +1981,21 @@ export type GetJitterShimmerResponses = {
         /**
          * Flag indicating insufficient periods: 1 if <100 periods (reduced reliability), 0 if ≥100 periods. Example: 0
          */
-        INSUFFICIENT_PERIODS?: string;
+        INSUFFICIENT_PERIODS?: number;
         /**
-         * Jitter classification: "Normal" (≤1.04%) or "Elevated" (>1.04%). Example: "Normal"
+         * Flag against the MDVP reference (not validated for Praat): "Normal" (≤1.04%) or "Elevated" (>1.04%). Example: "Normal"
          */
         JITTER_SEVERITY?: string;
         /**
-         * Shimmer classification: "Normal" (≤3.81%) or "Elevated" (>3.81%). Example: "Normal"
+         * Flag against the MDVP reference (not validated for Praat): "Normal" (≤3.81%) or "Elevated" (>3.81%). Example: "Normal"
          */
         SHIMMER_SEVERITY?: string;
         /**
-         * Clinical interpretation text for jitter results. Example: "Within normal limits (≤1.04%)"
+         * Interpretation text for jitter results. Example: "At or below MDVP reference (1.04 %), not validated for Praat"
          */
         JITTER_INTERPRETATION?: string;
         /**
-         * Clinical interpretation text for shimmer results. Example: "Within normal limits (≤3.81%)"
+         * Interpretation text for shimmer results. Example: "At or below MDVP reference (3.81 %), not validated for Praat"
          */
         SHIMMER_INTERPRETATION?: string;
     };
@@ -2397,11 +2393,11 @@ export type GetCalculateVoiceDynamicsResponses = {
          */
         AGE_GROUP?: string;
         /**
-         * Categorical: presbylaryngis (age-related laryngeal change) risk.
+         * Categorical age flag, informational only: to our knowledge, no validated presbylaryngis cut-off on these measures.
          */
         PRESBYLARYNGIS_RISK?: string;
         /**
-         * Threshold age above which presbylaryngis is suspected.
+         * Age above which the flag is set (internal setting, not a validated cut-off).
          */
         PRESBYLARYNGIS_AGE_THRESHOLD?: string;
         /**
