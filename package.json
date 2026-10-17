@@ -56,11 +56,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pmarmaroli/vocametrix-js.git"
+    "url": "https://github.com/Vocametrix/vocametrix-js.git"
   },
   "homepage": "https://www.vocametrix.com/api-docs",
   "bugs": {
-    "url": "https://github.com/pmarmaroli/vocametrix-js/issues"
+    "url": "https://github.com/Vocametrix/vocametrix-js/issues"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.64.0",
