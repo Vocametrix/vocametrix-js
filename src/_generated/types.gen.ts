@@ -253,11 +253,11 @@ export type GetTranscriptionProgressByTranscriptionIdData = {
          */
         transcriptionId: string;
     };
-    query: {
+    query?: {
         /**
-         * REQUIRED query string parameter (e.g. ?apiKey=YOUR_KEY). The X-API-Key header is ignored on this endpoint due to EventSource limitations.
+         * Query string alternative to the X-API-Key header (e.g. ?apiKey=YOUR_KEY), for browser EventSource, which cannot set headers. One of the two is required.
          */
-        apiKey: string;
+        apiKey?: string;
     };
     url: '/api/transcription-progress/{transcriptionId}';
 };

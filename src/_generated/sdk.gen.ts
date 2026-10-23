@@ -95,11 +95,15 @@ export const postOfflineSpeechToText = <ThrowOnError extends boolean = false>(op
 };
 
 /**
- * Server-Sent Events (SSE) stream delivering transcription progress events and the final transcript. The terminal event…
+ * Server-Sent Events (SSE) stream delivering transcription progress events and the final transcript. A progress event w…
  */
 export const getTranscriptionProgressByTranscriptionId = <ThrowOnError extends boolean = false>(options: Options<GetTranscriptionProgressByTranscriptionIdData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetTranscriptionProgressByTranscriptionIdResponse, unknown, ThrowOnError>({
         security: [
+            {
+                name: 'X-API-Key',
+                type: 'apiKey'
+            },
             {
                 in: 'query',
                 name: 'apiKey',
