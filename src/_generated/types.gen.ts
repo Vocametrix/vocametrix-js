@@ -2827,11 +2827,11 @@ export type PostSoundLevelResponses = {
          */
         soundLevel?: number;
         /**
-         * String — currently "dB SPL".
+         * String — "dB (uncalibrated)".
          */
         unit?: string;
         /**
-         * String — currently "20-8000 Hz".
+         * String — "20-<half the sampling rate> Hz", e.g. "20-24000 Hz" for a 48 kHz file.
          */
         frequencyRange?: number;
     };
@@ -2876,9 +2876,15 @@ export type GetGemapsExtractResponses = {
      */
     200: {
         /**
-         * The full eGeMAPSv02 feature object (88 features) as emitted by openSMILE — feature names follow the openSMILE convention (e.g. F0semitoneFrom27.5Hz_sma3nz_amean, loudness_sma3_amean, jitterLocal_sma3nz_amean, shimmerLocaldB_sma3nz_amean, HNRdBACF_sma3nz_amean, F1frequency_sma3nz_amean, etc.). Refer to the openSMILE eGeMAPSv02 configuration for the canonical key list — this server is a transparent wrapper around it.
+         * Object (files up to 8 s) of GeMAPS v01b functionals as emitted by openSMILE (e.g. F0semitoneFrom27.5Hz_sma3nz_amean, loudness_sma3_amean, jitterLocal_sma3nz_amean, shimmerLocaldB_sma3nz_amean, HNRdBACF_sma3nz_amean, F1frequency_sma3nz_amean), plus speech_percentage and silence_percentage. feature_count gives the number of keys. Refer to the openSMILE GeMAPSv01b configuration for the canonical list.
          */
-        '<eGeMAPSv02 features>'?: {
+        features?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Object (files over 8 s) with one entry per feature: `{ mean, min, max, std, median, count }` across chunks; the per-chunk results are in `chunks`.
+         */
+        combined_features?: {
             [key: string]: unknown;
         };
         /**

@@ -73,8 +73,8 @@ Never hardcode API keys in source code. Use environment variables or a secrets m
 | `client.phoneme` | Phoneme detection (French, Estonian) |
 | `client.stuttering` | Stuttering classification (async polling) |
 | `client.prosody` | Prosody similarity (model vs learner) |
-| `client.egemaps` | eGeMAPS 88-feature extraction |
-| `client.soundLevel` | Sound level measurement (dB SPL) |
+| `client.egemaps` | GeMAPS v01b extraction (62 features) |
+| `client.soundLevel` | Sound level measurement (uncalibrated dB) |
 
 ## Workflows
 

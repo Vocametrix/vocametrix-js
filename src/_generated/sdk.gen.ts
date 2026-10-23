@@ -454,7 +454,7 @@ export const postVoiceAssessment = <ThrowOnError extends boolean = false>(option
 };
 
 /**
- * Measure the sound level (dB SPL) of an audio recording over a specified time window. Useful for environmental noise c…
+ * Measure the sound level of an audio recording over a specified time window, in uncalibrated dB (digital full scale ta…
  */
 export const postSoundLevel = <ThrowOnError extends boolean = false>(options: Options<PostSoundLevelData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<PostSoundLevelResponse, unknown, ThrowOnError>({
@@ -474,7 +474,7 @@ export const postSoundLevel = <ThrowOnError extends boolean = false>(options: Op
 };
 
 /**
- * Extract the full openSMILE eGeMAPSv02 feature set (88 features) from a previously uploaded audio file. Files longer t…
+ * Extract the openSMILE GeMAPS v01b feature set (62 features) from a previously uploaded audio file. Files up to 8 seco…
  */
 export const getGemapsExtract = <ThrowOnError extends boolean = false>(options: Options<GetGemapsExtractData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetGemapsExtractResponse, unknown, ThrowOnError>({
