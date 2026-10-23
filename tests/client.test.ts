@@ -169,6 +169,28 @@ describe("query and body parameters match the server", () => {
   });
 });
 
+describe("transcription.stream end of stream", () => {
+  test("ends on the contentUrl event and fetches the text from it", async () => {
+    // As the server sends it: a progress event already saying "Succeeded",
+    // then the "complete" event with only contentUrl.
+    const sse = 'event: progress\ndata: {"status":"Succeeded"}\n\n'
+      + 'event: complete\ndata: {"message":"done","contentUrl":"https://azure/transcript.json"}\n\n';
+    const body = new ReadableStream({
+      start(controller) { controller.enqueue(new TextEncoder().encode(sse)); controller.close(); },
+    });
+    mockFetch(
+      ...blobUpload,
+      { ok: true, json: () => Promise.resolve({ transcriptionId: "t1" }) },
+      { ok: true, body: body as unknown as null },
+      { ok: true, json: () => Promise.resolve({ combinedRecognizedPhrases: [{ display: "Bonjour." }] }) },
+    );
+    const events = [];
+    for await (const ev of (await newClient()).transcription.stream(audio, "fr-FR")) events.push(ev);
+    expect(events.map((e) => e.isTerminalSuccess)).toEqual([false, true]);
+    expect(events[1]?.displayText).toBe("Bonjour.");
+  });
+});
+
 // ── Pronunciation blob-url pattern ────────────────────────────────────────
 
 describe("pronunciation.assess", () => {

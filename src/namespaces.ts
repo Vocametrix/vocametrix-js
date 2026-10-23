@@ -267,7 +267,22 @@ export class TranscriptionNamespace {
     const transcriptionId = startBody.transcriptionId;
 
     for await (const payload of sseStream(this.baseUrl, transcriptionId, this.apiKey)) {
-      yield makeTranscriptionEvent(payload);
+      const event = makeTranscriptionEvent(payload);
+      // A progress event already says "Succeeded"; the "complete" event that
+      // follows has no status, only contentUrl, a link to the Azure transcript
+      // JSON. That event is the real end, so the text is fetched there.
+      const contentUrl = payload["contentUrl"];
+      if (typeof contentUrl === "string") {
+        const transcript = (await (await fetchWithRetry(contentUrl, {})).json()) as {
+          combinedRecognizedPhrases?: { display?: string }[];
+        };
+        event.status = "Succeeded";
+        event.isTerminalSuccess = true;
+        event.displayText = transcript.combinedRecognizedPhrases?.[0]?.display;
+      } else if (event.isTerminalSuccess) {
+        event.isTerminalSuccess = false;
+      }
+      yield event;
     }
   }
 }
