@@ -52,21 +52,7 @@ describe("VocametrixClient", () => {
 // ── AVQI upload routing ────────────────────────────────────────────────────
 
 describe("avqi.calculate", () => {
-  test("uses assignFileId for sustained vowel", async () => {
-    const fetch = mockFetch(
-      { ok: true, json: () => Promise.resolve({ fileId: "sv123" }) },   // assignFileId
-      { ok: true, json: () => Promise.resolve({ AVQI: 3.2 }) },          // calculate-avqi
-    );
-    const { VocametrixClient } = await import("../src/client.js");
-    const client = new VocametrixClient({ apiKey: "test-key" });
-    const result = await client.avqi.calculate(Buffer.from("audio")) as Record<string, unknown>;
-    expect(result["AVQI"]).toBe(3.2);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    const firstUrl = (fetch.mock.calls[0] as [string])[0];
-    expect(firstUrl).toContain("/api/assignFileId");
-  });
-
-  test("uploads both sv and cs when connectedSpeech provided", async () => {
+  test("uploads sv and cs through assignFileId", async () => {
     const fetch = mockFetch(
       { ok: true, json: () => Promise.resolve({ fileId: "sv1" }) },
       { ok: true, json: () => Promise.resolve({ fileId: "cs1" }) },
@@ -77,6 +63,109 @@ describe("avqi.calculate", () => {
     const result = await client.avqi.calculate(Buffer.from("sv"), Buffer.from("cs")) as Record<string, unknown>;
     expect(result["AVQI"]).toBe(2.1);
     expect(fetch).toHaveBeenCalledTimes(3);
+    expect((fetch.mock.calls[0] as [string])[0]).toContain("/api/assignFileId");
+  });
+});
+
+// ── Parameters each endpoint requires (routes/audio/praat.service.js and
+// audio.controller.js in vocametrix-platform). A missing or misnamed one is a
+// 400 from the server, which a mocked fetch would otherwise never show.
+
+const audio = Buffer.from("audio");
+
+function queryOf(fetch: ReturnType<typeof mockFetch>, path: string): Record<string, string> {
+  const url = fetch.mock.calls.map((c) => (c as [string])[0]).find((u) => u.includes(path));
+  if (url === undefined) throw new Error(`no call to ${path}`);
+  return Object.fromEntries(new URL(url).searchParams);
+}
+
+function bodyOf(fetch: ReturnType<typeof mockFetch>, path: string): Record<string, unknown> {
+  const call = fetch.mock.calls.find((c) => (c as [string])[0].includes(path)) as [string, { body: string }] | undefined;
+  if (call === undefined) throw new Error(`no call to ${path}`);
+  return JSON.parse(call[1].body) as Record<string, unknown>;
+}
+
+function fileIds(...ids: string[]): FakeResponse[] {
+  return ids.map((id) => ({ ok: true, json: () => Promise.resolve({ fileId: id }) }));
+}
+
+const blobUpload: FakeResponse[] = [
+  { ok: true, json: () => Promise.resolve({ uploadURL: "https://azure/put", blobURL: "https://azure/blob" }) },
+  { ok: true },
+];
+
+async function newClient() {
+  const { VocametrixClient } = await import("../src/client.js");
+  return new VocametrixClient({ apiKey: "test-key" });
+}
+
+describe("query and body parameters match the server", () => {
+  test("avqi sends csFileId and version", async () => {
+    const fetch = mockFetch(...fileIds("sv1", "cs1"), { ok: true });
+    await (await newClient()).avqi.calculate(audio, audio);
+    expect(queryOf(fetch, "/api/calculate-avqi")).toMatchObject({ svFileId: "sv1", csFileId: "cs1", version: "v03.01" });
+  });
+
+  test("dsi sends the voice-range values", async () => {
+    const fetch = mockFetch(...fileIds("sv1"), { ok: true });
+    await (await newClient()).dsi.calculate(audio, { mpt: 15.2, maximumF0: 440, minimumIntensity: 45.5, age: 35, gender: 2 });
+    expect(queryOf(fetch, "/api/calculate-dsi")).toEqual({
+      svFileId: "sv1", mpt: "15.2", maximumF0: "440", minimumIntensity: "45.5", age: "35", gender: "2",
+    });
+  });
+
+  test("hnr sends age and gender", async () => {
+    const fetch = mockFetch(...fileIds("sv1"), { ok: true });
+    await (await newClient()).hnr.calculate(audio, 40, 2);
+    expect(queryOf(fetch, "/api/calculate-hnr-multiband")).toEqual({ svFileId: "sv1", age: "40", gender: "2" });
+  });
+
+  test("spectral, formants and voice dynamics send age and gender", async () => {
+    const fetch = mockFetch(...fileIds("a"), { ok: true }, ...fileIds("b"), { ok: true }, ...fileIds("c"), { ok: true });
+    const client = await newClient();
+    await client.advanced.calculateSpectral(audio, 40, 2);
+    await client.advanced.calculateFormantStatistics(audio, 40, 2);
+    await client.advanced.calculateVoiceDynamics(audio, 40, 2);
+    expect(queryOf(fetch, "/api/calculate-spectral-advanced")).toEqual({ svFileId: "a", age: "40", gender: "2" });
+    expect(queryOf(fetch, "/api/calculate-formant-statistics")).toEqual({ svFileId: "b", age: "40", gender: "2" });
+    expect(queryOf(fetch, "/api/calculate-voice-dynamics")).toEqual({ svFileId: "c", age: "40", gender: "2" });
+  });
+
+  test("abi sends csFileId", async () => {
+    const fetch = mockFetch(...fileIds("sv1", "cs1"), { ok: true });
+    await (await newClient()).advanced.calculateAbi(audio, audio);
+    expect(queryOf(fetch, "/api/calculate-abi")).toEqual({ svFileId: "sv1", csFileId: "cs1" });
+  });
+
+  test("s/z ratio sends sFileId, zFileId, patientAge and gender", async () => {
+    const fetch = mockFetch(...fileIds("s1", "z1"), { ok: true });
+    await (await newClient()).advanced.calculateSzRatio(audio, audio, 50, 1);
+    expect(queryOf(fetch, "/api/calculate-sz-ratio")).toEqual({ sFileId: "s1", zFileId: "z1", patientAge: "50", gender: "1" });
+  });
+
+  test("prosody similarity sends modelFileId and userFileId", async () => {
+    const fetch = mockFetch(...fileIds("m1", "u1"), { ok: true });
+    await (await newClient()).prosody.similarity(audio, audio);
+    expect(queryOf(fetch, "/api/calculate-prosody-similarity")).toEqual({ modelFileId: "m1", userFileId: "u1" });
+  });
+
+  test("gemaps sends fileId", async () => {
+    const fetch = mockFetch(...fileIds("f1"), { ok: true });
+    await (await newClient()).egemaps.extract(audio);
+    expect(queryOf(fetch, "/api/gemaps-extract")).toEqual({ fileId: "f1" });
+  });
+
+  test("sound level sends blobUrl, start_sec and stop_sec", async () => {
+    const fetch = mockFetch(...blobUpload, { ok: true });
+    await (await newClient()).soundLevel.measure(audio);
+    expect(bodyOf(fetch, "/api/soundLevel")).toEqual({ blobUrl: "https://azure/blob", start_sec: 0.001, stop_sec: 999999 });
+  });
+
+  test("transcription sends blobURL and locale", async () => {
+    const fetch = mockFetch(...blobUpload, { ok: true, json: () => Promise.resolve({ transcriptionId: "t1" }) });
+    const stream = (await newClient()).transcription.stream(audio, "fr-FR");
+    await stream.next().catch(() => undefined); // the SSE part is not mocked here
+    expect(bodyOf(fetch, "/api/offline-speech-to-text")).toEqual({ blobURL: "https://azure/blob", locale: "fr-FR" });
   });
 });
 
@@ -393,7 +482,7 @@ describe("deprecated email field", () => {
 
     const { VocametrixClient } = await import("../src/client.js");
     const client = new VocametrixClient({ apiKey: "k", email: "default@test.com" });
-    await client.avqi.calculate(Buffer.from("sv"), undefined, "override@test.com");
+    await client.avqi.calculate(Buffer.from("sv"), Buffer.from("cs"), "v03.01", "override@test.com");
 
     expect(capturedForms[0]?.get("email")).toBeNull();
   });

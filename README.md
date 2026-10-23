@@ -35,9 +35,9 @@ import { VocametrixClient } from "vocametrix";
 
 const client = new VocametrixClient(); // reads VOCAMETRIX_API_KEY from environment
 
-// AVQI — clinically validated dysphonia score (Maryn & Weenink 2015)
-const result = await client.avqi.calculate("vowel.wav");
-console.log(result["AVQI"]);    // e.g. 1.8 → normal (threshold: 2.97)
+// AVQI v03.01: a sustained vowel plus a connected speech recording
+const result = await client.avqi.calculate("vowel.wav", "speech.wav");
+console.log(result["AVQI"]);    // the cut-off depends on the language and text read
 console.log(result["CPP"], result["HNR25"]);
 ```
 
@@ -98,10 +98,11 @@ for (const word of result["words"] as Array<Record<string, unknown>>) {
 import { readdirSync } from "fs";
 import path from "path";
 
-for (const file of readdirSync("./recordings").filter(f => f.endsWith(".wav"))) {
-  const result = await client.avqi.calculate(path.join("recordings", file));
-  const avqi = result["AVQI"] as number;
-  console.log(`${file}: AVQI=${avqi.toFixed(2)} (${avqi < 2.97 ? "Normal" : "Dysphonic"})`);
+// Each patient folder holds vowel.wav and speech.wav
+for (const patient of readdirSync("./recordings")) {
+  const dir = path.join("recordings", patient);
+  const result = await client.avqi.calculate(path.join(dir, "vowel.wav"), path.join(dir, "speech.wav"));
+  console.log(`${patient}: AVQI=${(result["AVQI"] as number).toFixed(2)}`);
 }
 ```
 
@@ -127,7 +128,7 @@ import {
 } from "vocametrix";
 
 try {
-  const result = await client.avqi.calculate("vowel.wav");
+  const result = await client.avqi.calculate("vowel.wav", "speech.wav");
 } catch (err) {
   if (err instanceof VocametrixRateLimitError) {
     console.error(`Rate limited. Retry after ${err.retryAfter}s`);

@@ -12,4 +12,4 @@ export {
 } from "./exceptions.js";
 
 export type { AudioInput, SseEvent } from "./_http.js";
-export type { TranscriptionEvent } from "./namespaces.js";
+export type { TranscriptionEvent, DsiVoiceRange } from "./namespaces.js";

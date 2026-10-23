@@ -37,6 +37,19 @@ import type {
   GetCalculateVoiceDynamicsResponses,
 } from "./_generated/types.gen.js";
 
+/** Voice-range values the DSI formula needs besides the recording. */
+export interface DsiVoiceRange {
+  /** Maximum phonation time, seconds. */
+  mpt: number;
+  /** Highest F0 reached, Hz. */
+  maximumF0: number;
+  /** Softest intensity, dB SPL: needs a calibrated measurement. */
+  minimumIntensity: number;
+  age: number;
+  /** 1 male, 2 female, 3 other. */
+  gender: 1 | 2 | 3;
+}
+
 export interface TranscriptionEvent {
   status: string;
   progress: number | undefined;
@@ -72,16 +85,14 @@ export class AvqiNamespace {
 
   async calculate(
     sustainedVowel: AudioInput,
-    connectedSpeech?: AudioInput,
+    connectedSpeech: AudioInput,
+    version: "v03.01" | "v02.03" = "v03.01",
     email?: string,
   ): Promise<GetCalculateAvqiResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId });
-    if (connectedSpeech !== undefined) {
-      const csId = await uploadAssignFileId(this.baseUrl, this.authHeaders, connectedSpeech, effectiveEmail);
-      params.set("csFileId", csId);
-    }
+    const csId = await uploadAssignFileId(this.baseUrl, this.authHeaders, connectedSpeech, effectiveEmail);
+    const params = new URLSearchParams({ svFileId: svId, csFileId: csId, version });
     const resp = await fetchWithRetry(`${this.baseUrl}/api/calculate-avqi?${params.toString()}`, {
       headers: this.authHeaders,
     });
@@ -96,10 +107,21 @@ export class DsiNamespace {
     private readonly email: string,
   ) {}
 
-  async calculate(sustainedVowel: AudioInput, email?: string): Promise<GetCalculateDsiResponses[200]> {
+  async calculate(
+    sustainedVowel: AudioInput,
+    voiceRange: DsiVoiceRange,
+    email?: string,
+  ): Promise<GetCalculateDsiResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId });
+    const params = new URLSearchParams({
+      svFileId: svId,
+      mpt: String(voiceRange.mpt),
+      maximumF0: String(voiceRange.maximumF0),
+      minimumIntensity: String(voiceRange.minimumIntensity),
+      age: String(voiceRange.age),
+      gender: String(voiceRange.gender),
+    });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-dsi?${params.toString()}`,
       { headers: this.authHeaders },
@@ -136,12 +158,13 @@ export class HnrNamespace {
 
   async calculate(
     sustainedVowel: AudioInput,
+    age: number,
     gender: 1 | 2 = 1,
     email?: string,
   ): Promise<GetCalculateHnrMultibandResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId, gender: String(gender) });
+    const params = new URLSearchParams({ svFileId: svId, age: String(age), gender: String(gender) });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-hnr-multiband?${params.toString()}`,
       { headers: this.authHeaders },
@@ -233,7 +256,7 @@ export class TranscriptionNamespace {
     const resp = await fetchWithRetry(`${this.baseUrl}/api/offline-speech-to-text`, {
       method: "POST",
       headers: { ...this.authHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({ blobUrl, locale }),
+      body: JSON.stringify({ blobURL: blobUrl, locale }),
     });
     const startBody = (await resp.json()) as { transcriptionId?: unknown };
     if (typeof startBody.transcriptionId !== "string" || startBody.transcriptionId.length === 0) {
@@ -368,9 +391,9 @@ export class ProsodyNamespace {
     email?: string,
   ): Promise<GetCalculateProsodySimilarityResponses[200]> {
     const effectiveEmail = email ?? this.email;
-    const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, model, effectiveEmail);
-    const csId = await uploadAssignFileId(this.baseUrl, this.authHeaders, learner, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId, csFileId: csId });
+    const modelFileId = await uploadAssignFileId(this.baseUrl, this.authHeaders, model, effectiveEmail);
+    const userFileId = await uploadAssignFileId(this.baseUrl, this.authHeaders, learner, effectiveEmail);
+    const params = new URLSearchParams({ modelFileId, userFileId });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-prosody-similarity?${params.toString()}`,
       { headers: this.authHeaders },
@@ -389,7 +412,7 @@ export class EgemapsNamespace {
   async extract(audio: AudioInput, email?: string): Promise<GetGemapsExtractResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const fileId = await uploadAssignFileId(this.baseUrl, this.authHeaders, audio, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: fileId });
+    const params = new URLSearchParams({ fileId });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/gemaps-extract?${params.toString()}`,
       { headers: this.authHeaders },
@@ -406,7 +429,7 @@ export class SoundLevelNamespace {
 
   async measure(
     audio: AudioInput,
-    startSec = 0,
+    startSec = 0.001,
     endSec?: number,
   ): Promise<PostSoundLevelResponses[200]> {
     if (startSec === 0) {
@@ -415,9 +438,9 @@ export class SoundLevelNamespace {
       );
     }
 
-    const blobURL = await uploadBlobUrl(this.baseUrl, this.authHeaders, audio);
-    const body: Record<string, unknown> = { blobURL, start_sec: startSec };
-    if (endSec !== undefined) body["end_sec"] = endSec;
+    const blobUrl = await uploadBlobUrl(this.baseUrl, this.authHeaders, audio);
+    // stop_sec is required; a value past the end of the file means "to the end".
+    const body = { blobUrl, start_sec: startSec, stop_sec: endSec ?? 999999 };
     const resp = await fetchWithRetry(`${this.baseUrl}/api/soundLevel`, {
       method: "POST",
       headers: { ...this.authHeaders, "Content-Type": "application/json" },
@@ -451,12 +474,13 @@ export class AdvancedVoiceAnalysisNamespace {
 
   async calculateSpectral(
     sustainedVowel: AudioInput,
+    age: number,
     gender: 1 | 2 = 1,
     email?: string,
   ): Promise<GetCalculateSpectralAdvancedResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId, gender: String(gender) });
+    const params = new URLSearchParams({ svFileId: svId, age: String(age), gender: String(gender) });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-spectral-advanced?${params.toString()}`,
       { headers: this.authHeaders },
@@ -465,14 +489,21 @@ export class AdvancedVoiceAnalysisNamespace {
   }
 
   async calculateSzRatio(
-    sustainedVowel: AudioInput,
-    connectedSpeech: AudioInput,
+    sustainedS: AudioInput,
+    sustainedZ: AudioInput,
+    patientAge: number,
+    gender: 1 | 2 = 1,
     email?: string,
   ): Promise<GetCalculateSzRatioResponses[200]> {
     const effectiveEmail = email ?? this.email;
-    const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const csId = await uploadAssignFileId(this.baseUrl, this.authHeaders, connectedSpeech, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId, csFileId: csId });
+    const sFileId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedS, effectiveEmail);
+    const zFileId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedZ, effectiveEmail);
+    const params = new URLSearchParams({
+      sFileId,
+      zFileId,
+      patientAge: String(patientAge),
+      gender: String(gender),
+    });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-sz-ratio?${params.toString()}`,
       { headers: this.authHeaders },
@@ -496,12 +527,13 @@ export class AdvancedVoiceAnalysisNamespace {
 
   async calculateFormantStatistics(
     sustainedVowel: AudioInput,
+    age: number,
     gender: 1 | 2 = 1,
     email?: string,
   ): Promise<GetCalculateFormantStatisticsResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId, gender: String(gender) });
+    const params = new URLSearchParams({ svFileId: svId, age: String(age), gender: String(gender) });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-formant-statistics?${params.toString()}`,
       { headers: this.authHeaders },
@@ -511,11 +543,13 @@ export class AdvancedVoiceAnalysisNamespace {
 
   async calculateAbi(
     sustainedVowel: AudioInput,
+    connectedSpeech: AudioInput,
     email?: string,
   ): Promise<GetCalculateAbiResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId });
+    const csId = await uploadAssignFileId(this.baseUrl, this.authHeaders, connectedSpeech, effectiveEmail);
+    const params = new URLSearchParams({ svFileId: svId, csFileId: csId });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-abi?${params.toString()}`,
       { headers: this.authHeaders },
@@ -525,11 +559,13 @@ export class AdvancedVoiceAnalysisNamespace {
 
   async calculateVoiceDynamics(
     sustainedVowel: AudioInput,
+    age: number,
+    gender: 1 | 2 = 1,
     email?: string,
   ): Promise<GetCalculateVoiceDynamicsResponses[200]> {
     const effectiveEmail = email ?? this.email;
     const svId = await uploadAssignFileId(this.baseUrl, this.authHeaders, sustainedVowel, effectiveEmail);
-    const params = new URLSearchParams({ svFileId: svId });
+    const params = new URLSearchParams({ svFileId: svId, age: String(age), gender: String(gender) });
     const resp = await fetchWithRetry(
       `${this.baseUrl}/api/calculate-voice-dynamics?${params.toString()}`,
       { headers: this.authHeaders },
