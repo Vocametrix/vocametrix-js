@@ -131,6 +131,15 @@ describe("query and body parameters match the server", () => {
     expect(queryOf(fetch, "/api/calculate-voice-dynamics")).toEqual({ svFileId: "c", age: "40", gender: "2" });
   });
 
+  test("ddk sends task, gender and age", async () => {
+    let fetch = mockFetch(...fileIds("d1"), { ok: true });
+    await (await newClient()).advanced.measureDdk(audio, "pataka", { gender: "male", age: 70 });
+    expect(queryOf(fetch, "/api/measure-ddk")).toEqual({ fileId: "d1", task: "pataka", gender: "male", age: "70" });
+    fetch = mockFetch(...fileIds("d2"), { ok: true });
+    await (await newClient()).advanced.measureDdk(audio, "pa_steady");
+    expect(queryOf(fetch, "/api/measure-ddk")).toEqual({ fileId: "d2", task: "pa_steady" });
+  });
+
   test("abi sends csFileId", async () => {
     const fetch = mockFetch(...fileIds("sv1", "cs1"), { ok: true });
     await (await newClient()).advanced.calculateAbi(audio, audio);

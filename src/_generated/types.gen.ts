@@ -2778,6 +2778,99 @@ export type PostVoiceAssessmentResponses = {
 
 export type PostVoiceAssessmentResponse = PostVoiceAssessmentResponses[keyof PostVoiceAssessmentResponses];
 
+export type GetMeasureDdkData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * REQUIRED. fileId of the repetition recording (at least 5 s for the fast tasks).
+         */
+        fileId: string;
+        /**
+         * REQUIRED. "pa" | "ta" | "ka" | "pataka" (as fast as possible) | "pa_steady" (at least 30 times at a comfortable, regular pace).
+         */
+        task: string;
+        /**
+         * Optional. "male" | "female". Needed for the norm comparison.
+         */
+        gender?: string;
+        /**
+         * Optional. Age in whole years. Needed for the norm comparison (norms cover 65 to 86).
+         */
+        age?: number;
+    };
+    url: '/api/measure-ddk';
+};
+
+export type GetMeasureDdkErrors = {
+    /**
+     * Bad request — missing or invalid parameter
+     */
+    400: unknown;
+    /**
+     * Unauthorized — missing or invalid API key
+     */
+    401: unknown;
+    /**
+     * Rate limit exceeded
+     */
+    429: unknown;
+    /**
+     * Server error
+     */
+    500: unknown;
+};
+
+export type GetMeasureDdkResponses = {
+    /**
+     * Successful response
+     */
+    200: {
+        /**
+         * Echo of the task parameter. Example: "pataka"
+         */
+        task?: string;
+        /**
+         * number - Syllables detected. Example: 36
+         */
+        syllables?: number;
+        /**
+         * number - Syllables per second from the onset of syllable 1 to the onset of syllable 10 (the window of the norms); absent below 10 syllables. Example: 7.32
+         */
+        rate_first9?: number;
+        /**
+         * number - Syllables per second over the whole repetition. Example: 7.43
+         */
+        rate_overall?: number;
+        /**
+         * number - Coefficient of variation of the intervals between syllable onsets, in %; higher means less regular. Example: 13.6
+         */
+        cov_percent?: number;
+        /**
+         * number - Normalized pairwise variability index of the intervals; higher means less regular. Example: 18.6
+         */
+        npvi?: number;
+        /**
+         * number - Change of the interval length per syllable, in ms; negative means the speaker accelerates. Example: -0.09
+         */
+        interval_slope_ms?: number;
+        /**
+         * object - {source, mean, sd, min, max, z}: the Pierce et al. 2013 norm (syllables per second) for this gender and age group, and the z-score of rate_first9; null without gender and age, outside 65-86, or for pa_steady.
+         */
+        norm?: {
+            [key: string]: unknown;
+        };
+        /**
+         * array - Onset time of each syllable, in seconds.
+         */
+        onsets_s?: Array<{
+            [key: string]: unknown;
+        }>;
+    };
+};
+
+export type GetMeasureDdkResponse = GetMeasureDdkResponses[keyof GetMeasureDdkResponses];
+
 export type PostSoundLevelData = {
     body: {
         /**

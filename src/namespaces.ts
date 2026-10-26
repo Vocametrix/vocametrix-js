@@ -35,6 +35,7 @@ import type {
   GetCalculateFormantStatisticsResponses,
   GetCalculateAbiResponses,
   GetCalculateVoiceDynamicsResponses,
+  GetMeasureDdkResponses,
 } from "./_generated/types.gen.js";
 
 /** Voice-range values the DSI formula needs besides the recording. */
@@ -586,6 +587,28 @@ export class AdvancedVoiceAnalysisNamespace {
       { headers: this.authHeaders },
     );
     return asJson<GetCalculateVoiceDynamicsResponses[200]>(resp);
+  }
+
+  /**
+   * Oral diadochokinesis: syllable rate, regularity (COV, nPVI) and acceleration.
+   * `task` is "pa", "ta", "ka", "pataka" (as fast as possible) or "pa_steady"
+   * (/pa/ at a regular pace). With gender and an age of 65 to 86, the result
+   * includes the Pierce et al. 2013 norm for the rate over the first 9 syllables.
+   */
+  async measureDdk(
+    audio: AudioInput,
+    task: "pa" | "ta" | "ka" | "pataka" | "pa_steady",
+    options: { gender?: "male" | "female"; age?: number; email?: string } = {},
+  ): Promise<GetMeasureDdkResponses[200]> {
+    const fileId = await uploadAssignFileId(this.baseUrl, this.authHeaders, audio, options.email ?? this.email);
+    const params = new URLSearchParams({ fileId, task });
+    if (options.gender) params.set("gender", options.gender);
+    if (options.age !== undefined) params.set("age", String(options.age));
+    const resp = await fetchWithRetry(
+      `${this.baseUrl}/api/measure-ddk?${params.toString()}`,
+      { headers: this.authHeaders },
+    );
+    return asJson<GetMeasureDdkResponses[200]>(resp);
   }
 }
 
