@@ -30,4 +30,4 @@ jobs:
       - run: npm test
 
       - name: Publish with provenance
-        run: npm publish --provenance --access public --loglevel verbose
+        run: npm publish --provenance --access public
